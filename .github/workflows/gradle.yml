@@ -1,0 +1,51 @@
+
+name: Java CI with Gradle
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Repository herunterladen
+        uses: actions/checkout@v4
+
+      - name: Java 21 installieren
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+
+      - name: Projektordner finden
+        shell: bash
+        run: |
+          if [ -f "./gradlew" ]; then
+            echo "PROJECT_DIR=." >> "$GITHUB_ENV"
+          elif [ -f "./PvPMod-ohne-25-Prozent-Schadenslimit/gradlew" ]; then
+            echo "PROJECT_DIR=./PvPMod-ohne-25-Prozent-Schadenslimit" >> "$GITHUB_ENV"
+          else
+            echo "FEHLER: gradlew wurde nicht gefunden!"
+            exit 1
+          fi
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Plugin kompilieren
+        run: chmod +x gradlew && ./gradlew build
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Gebaute JAR bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: PvPMod
+          path: ${{ env.PROJECT_DIR }}/build/libs/*.jar
+          if-no-files-found: error
